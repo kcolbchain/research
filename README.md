@@ -17,6 +17,7 @@ Published research notes, analysis, and briefs from the kcolbchain research coll
 
 | Brief | Date | Scope |
 |-------|------|-------|
+| [MEV on L2 Rollups](briefs/mev-l2-rollups.md) | May 2026 | Sequencer extraction, shared sequencers, SUAVE, Timeboost, OP Stack revenue |
 | [Q2 2026 Research Brief](briefs/2026-Q2-research-brief.md) | Apr 2026 | L2 scaling, payments, stablecoins, DeFi, MEV, RWAs |
 
 ## How to Use

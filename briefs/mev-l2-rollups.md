@@ -1,303 +1,121 @@
-# MEV on Layer 2 Rollups: Mechanisms, Extraction Models, and Emerging Solutions
+# MEV on L2 Rollups: Sequencer Extraction, Shared Sequencers, SUAVE, Timeboost, and OP Stack Revenue
 
-## Abstract
+**Date:** May 2026
 
-Maximal Extractable Value (MEV) on Layer 2 (L2) rollups presents a distinct set of challenges and opportunities that differ fundamentally from Ethereum Layer 1 dynamics. Unlike L1 where MEV extraction is distributed among validators through public mempool competition, L2 rollups depend on centralized or semi-decentralized sequencers that have significant control over transaction ordering and inclusion. This brief examines the current state of MEV on L2 rollups, comparing sequencer-extracted MEV models with emerging shared sequencer architectures. We analyze three pivotal case studies—Arbitrum Timeboost, Optimism's OP Stack fee structure, and Flashbots SUAVE—to illustrate both the current approaches to MEV monetization and the future of MEV-resistant infrastructure. The brief concludes that the evolution from centralized sequencer MEV capture toward decentralized auction mechanisms and shared sequencer networks represents a critical path for L2 scalability while preserving user fairness and network security.
+**Scope:** 2000-3000 word research brief for kcolbchain/research issue #1
 
----
+## Executive Summary
 
-## 1. Introduction: MEV in the L2 Context
+Maximal extractable value (MEV) on Ethereum L2 rollups is shaped less by proof-of-stake validator competition and more by sequencer design. Most production rollups still rely on a centralized or tightly controlled sequencer for low-latency ordering, so the entity that accepts, orders, and batches transactions receives a privileged view of order flow. That makes L2 MEV a governance and market-design problem: who controls ordering, who captures latency rents, and whether users or public goods receive any rebate from the value their activity creates.
 
-MEV, the maximum value that can be extracted from block production through transaction reordering, inclusion, and exclusion, has become one of the most studied phenomena in blockchain economics. However, the dynamics of MEV differ significantly between Ethereum L1 and L2 rollups due to fundamental architectural differences.
+This brief compares four approaches. First, centralized sequencer extraction gives one operator the best latency and information position, which is operationally simple but creates opacity, censorship risk, and an incentive to monetize order flow privately. Second, shared sequencers such as Espresso and Astria separate transaction ordering from rollup execution, offering a path toward common pre-confirmations, cross-rollup composability, and more neutral ordering markets. Third, Flashbots SUAVE proposes a domain-neutral auction and execution layer where users express preferences and competitive executors route order flow across chains. Fourth, Arbitrum Timeboost and OP Stack fee systems show how leading optimistic rollup ecosystems are already turning sequencing rights and transaction fees into protocol revenue.
 
-On Ethereum L1, MEV extraction occurs through a competitive process: independent searchers identify profitable opportunities (arbitrage, liquidations, sandwich attacks), and validators/block builders prioritize transactions based on fee offers. This competition, while creating negative externalities like network congestion, is at least distributed across a large validator set.
+The central conclusion is pragmatic: L2 MEV is unlikely to disappear. The credible design space is about disclosure, competition, allocation, and constraints on harmful ordering. Rollups that keep centralized sequencers need explicit policies for priority access and revenue use. Rollups that decentralize sequencing need to prove that added coordination cost does not break latency, liveness, or user experience.
 
-L2 rollups, by contrast, typically employ a small number of sequencers—often just one—to aggregate and order transactions before submitting batches to the L1 data availability layer. This centralization creates a critical asymmetry: the sequencer has unilateral control over MEV extraction, with minimal competitive pressure to pass MEV value back to users or other network participants.[^1]
+## 1. Why L2 MEV Is Different
 
-The question of how to manage sequencer MEV has become strategic for the L2 ecosystem. Current approaches fall into two categories:
+On Ethereum L1, MEV is mediated by proposers, builders, relays, searchers, and public or private order flow. The market is still concentrated in places, but no single application-layer operator is expected to be the only long-running orderer for all transactions. Rollups change that architecture. A rollup sequencer commonly receives user transactions, assigns an order, gives users a fast confirmation, and later posts data or commitments to Ethereum.
 
-1. **Sequencer-extracted MEV models**: Centralized sequencers capture MEV directly and negotiate revenue-sharing with the rollup's governance or DAO
-2. **Shared sequencer and auction-based models**: Decentralized networks compete to sequence transactions, with mechanisms to return MEV value to users or the protocol
+That position creates three MEV advantages. The first is information: the sequencer can see incoming order flow before most other actors. The second is latency: it can insert, delay, or prioritize transactions faster than an external searcher submitting through the public path. The third is discretion: if ordering rules are not explicit or externally enforced, users cannot easily distinguish benign batching from value extraction.
 
----
+The risks are not only theoretical. L2BEAT tracks sequencer centralization and related escape-hatch assumptions across rollups, and its risk framework highlights that many systems still depend on one operator for transaction sequencing and censorship resistance assumptions. Academic work on rollups has also emphasized that centralized sequencing can create side channels and ordering advantages on the critical path from transaction submission to confirmation. The practical result is that an L2 can be cheaper and faster than L1 while also concentrating the most valuable ordering position.
 
-## 2. Sequencer-Extracted MEV vs. Shared Sequencer Models
+## 2. Sequencer-Extracted MEV
 
-### 2.1 Centralized Sequencer MEV
+In the simplest model, the sequencer captures the spread between what users pay for L2 execution and what the operator pays for L1 data availability, while also benefiting from any private ordering strategy it can legally and technically run. This can include latency arbitrage, backrunning, liquidations, and priority access sold to sophisticated participants. It does not require an explicit "MEV module"; the advantage exists because the sequencer controls ordering.
 
-Most L2 rollups today operate with centralized sequencers. Common forms of MEV extraction in this model include:
+The model has real benefits. It is easier to operate, easier to optimize for low latency, and easier to reason about during incident response. A single sequencer can provide rapid soft confirmations without waiting for a validator committee. That is one reason centralized sequencing has remained common even among teams with decentralization roadmaps.
 
-- **Ordering MEV**: The sequencer prioritizes high-value transactions or inserts its own arbitrage trades
-- **Latency MEV**: Strategic transaction delays to create profitable opportunities
-- **Frontrunning and sandwich attacks**: Inserting transactions before or after user transactions to capture value
+The tradeoff is value allocation. If MEV is extracted privately, users pay the cost through worse execution, less transparent routing, or order-flow discrimination. If MEV is captured by the protocol, it can fund public goods, security, or ecosystem incentives, but it still requires governance over who gets priority and under what rules. A centralized sequencer without a public policy leaves reviewers with no durable way to audit fairness.
 
-The centralized sequencer benefits from several advantages: faster finality, simpler implementation, and lower operating costs. However, these benefits come at the cost of:
+For data analysis, researchers should separate three streams that are often mixed together. Transaction fees are visible on-chain and can be reconciled from fee vaults or chain-level dashboards. Sequencer gross revenue is broader because it includes L2 fees before L1 posting costs. MEV revenue is narrower and harder to measure because it requires identifying profitable ordering-sensitive strategies. Public dashboards from Dune, Blockworks Research, L2BEAT, EigenPhi, and protocol-specific analytics can support estimates, but most MEV figures should be presented as estimates rather than accounting facts.
 
-- **Lack of transparency**: MEV extraction is often opaque to users
-- **Single point of failure**: Sequencer downtime or misconduct affects the entire rollup
-- **Censorship risk**: A centralized sequencer can exclude specific transactions or users
-- **Value leakage**: Users derive no benefit from MEV their transactions create[^2]
+## 3. Shared Sequencers
 
-### 2.2 Shared Sequencer Models
+Shared sequencers try to remove the ordering monopoly from an individual rollup. Instead of every chain operating its own sequencer, multiple rollups can send transactions to a common sequencing layer that provides ordering, pre-confirmations, and sometimes cross-domain coordination. Execution remains inside each rollup, but the ordering service becomes shared infrastructure.
 
-Recognizing these limitations, several projects are exploring shared sequencer architectures where multiple L2s or applications share a decentralized sequencer network. Prominent examples include:
+Espresso is a leading example. Its documentation describes a network that rollups can integrate with to receive confirmations from Espresso while retaining their own execution logic. Espresso's design centers on HotShot consensus and a marketplace for sequencing services, aiming to give rollups faster interoperability and a more decentralized ordering layer than a single in-house sequencer. The MEV implication is that ordering rights can become a competitive market rather than a private operator privilege.
 
-**Espresso Systems**: Provides a "plug-and-play" sequencer network that multiple L2s can use while maintaining their own execution layers. Espresso aims to reduce MEV by distributing sequencing across a decentralized validator set and enabling cross-domain MEV aggregation.
+Astria takes a modular sequencing approach. Its sequencing layer orders rollup transactions but does not execute them. The rollup receives ordered blocks from Astria and applies its own state transition function. That separation is important: it means a rollup can outsource ordering and pre-confirmation without outsourcing application logic or settlement. Astria's docs frame the sequencer as a service for sovereign rollups that want fast confirmations and shared liveness without each team bootstrapping a full sequencing network.
 
-**Astria**: A modular sequencer network designed for Cosmos-style rollups and Ethereum-aligned L2s. Astria's approach emphasizes order fairness through BFT (Byzantine Fault-Tolerant) consensus, where transactions are processed based on reception time rather than profitability.
+Shared sequencing can also improve cross-rollup UX. If two rollups use the same ordering layer, cross-domain messages and arbitrage can be sequenced with better coordination. That may reduce some race conditions and make cross-rollup applications less fragmented. It can also make cross-domain MEV more visible, because the ordering layer sees multiple domains rather than one chain in isolation.
 
-**Shared Sequencers**: This model allows multiple L2 rollups to use the same decentralized sequencer network, providing several advantages:
-- **MEV decentralization**: Sequencing power is distributed among many validators
-- **Cross-domain MEV optimization**: A shared sequencer can coordinate MEV extraction across multiple chains
-- **Censorship resistance**: No single actor can censor transactions
-- **Interoperability**: Users experience smoother cross-rollup interactions
+The hard parts are incentives and adoption. A shared sequencer only becomes valuable when enough rollups and users route order flow through it. It must also decide how to allocate sequencing fees, MEV, and responsibility for downtime. A rollup that already earns significant sequencer revenue may hesitate to hand ordering to an external network unless the shared layer improves security, regulatory posture, or user acquisition enough to compensate.
 
-However, shared sequencers introduce their own challenges: network coordination, validator set scaling, and the complexity of allocating MEV revenue across multiple rollups.[^3]
+## 4. Flashbots SUAVE on L2
 
----
+SUAVE, short for Single Unified Auction for Value Expression, is Flashbots' proposal for separating the expression of transaction preferences from the execution and block-building market. Rather than treating each chain's mempool as an isolated venue, SUAVE is designed as a domain-neutral environment where users, wallets, searchers, and builders can express preferences and compete to satisfy them.
 
-## 3. Case Study: Arbitrum Timeboost
+The L2 relevance is cross-domain MEV. A user's best execution path may involve Ethereum L1, an optimistic rollup, a zk rollup, a centralized exchange bridge, and multiple liquidity venues. A single rollup sequencer can only optimize a narrow slice of that route. SUAVE's thesis is that order flow should be auctioned and executed in a shared market where competition can return more value to users or applications, instead of letting each domain's privileged orderer internalize the opportunity.
 
-Arbitrum's Timeboost represents one of the most sophisticated approaches to sequencer MEV monetization on L2s. Rather than either fully centralizing or fully decentralizing sequencing, Timeboost implements a structured auction mechanism that balances MEV capture with user protection.
+SUAVE is not a drop-in replacement for every rollup sequencer. It introduces integration complexity, trust and privacy assumptions, and latency questions. Flashbots' public writing describes SUAVE as an evolving architecture for MEV markets, not as a fully mature production standard. That distinction matters for research: SUAVE should be evaluated as a credible direction for intent-based and cross-domain execution, while current rollup revenue models should be evaluated as production mechanisms.
 
-### 3.1 How Timeboost Works
+For L2 teams, the strategic question is whether to keep MEV local or route it to a broader market. Local capture is easier to govern and can directly fund the rollup. A SUAVE-like market may produce better execution and reduce harmful information asymmetry, but it requires users and applications to trust a more complex auction stack. The likely near-term outcome is hybridization: wallets and applications may use intent or auction systems for high-value order flow while ordinary transactions continue through native sequencers.
 
-Timeboost operates as a sealed-bid, second-price auction system:[^4]
+## 5. Arbitrum Timeboost
 
-1. **Express Lane**: Users and MEV searchers can submit transactions with sealed bids to gain priority placement
-2. **Auction Mechanics**: The highest bidder wins the right to express-lane sequencing for a 60-second time slot, but only pays the second-highest bid
-3. **Regular Transactions**: Non-bidding transactions are sequenced with slight delay on a separate track, protecting them from reordering by express-lane participants
-4. **Zero-Knowledge Guarantees**: The sequencer cannot reorder mempool transactions arbitrarily—express-lane winners only gain temporal priority, not visibility into pending transactions
+Arbitrum Timeboost is one of the clearest examples of making L2 priority access explicit. Instead of leaving latency races to private infrastructure, Timeboost introduces an auction for an "express lane" advantage. Arbitrum governance posts and research describe a mechanism where a bidder can win the right to submit transactions with priority for a short time window, while regular transactions continue through the ordinary path.
 
-### 3.2 MEV Impact and Value Capture
+The design goal is not to remove MEV. It is to replace opaque latency competition with a priced and bounded priority market. Searchers that previously competed by sending many transactions or optimizing private connectivity can instead bid for time advantage. The protocol can then direct auction proceeds to the DAO or another governed destination.
 
-Timeboost's design achieves several key objectives:
+Timeboost also reflects a key L2 reality: users value fast confirmations, and rollups do not want to degrade the base user experience just to decentralize every step immediately. A priority auction can preserve a fast centralized sequencer path while constraining how priority is sold. That makes it more practical than a full shared sequencer migration for a mature chain with existing liquidity and applications.
 
-**MEV Monetization**: By auctioning the right to priority sequencing, Arbitrum captures MEV revenue that would otherwise accrue exclusively to searchers. Since launch in April 2025, Timeboost has generated substantial fees for the Arbitrum DAO, with revenue flowing directly to governance.
+The mechanism still has limitations. Sophisticated actors are better positioned to price priority, and auction design can centralize around firms with better MEV models. Timeboost also does not solve all forms of backrunning or cross-domain MEV. Its main contribution is governance clarity: the rollup publicly defines the priority product, sells it through a protocol-level mechanism, and can account for the proceeds.
 
-**Reduction of Network Spam**: Under the previous FCFS (First-Come, First-Served) model, MEV searchers would "spam" the network with numerous transaction attempts to win latency races, causing congestion. Timeboost eliminates this incentive by offering a guaranteed priority slot for a fixed bid, reducing transaction volume and improving network efficiency.
+Researchers tracking Timeboost should avoid relying only on headline annualized revenue estimates. The better method is to monitor official Arbitrum documentation, DAO governance posts, and dashboards that break out auction bids, payments, express-lane usage, and destination addresses. Those data sources can show whether the mechanism is reducing spam, concentrating winners, or creating durable DAO revenue.
 
-**User Protection**: Critically, Timeboost protects non-participating users from harmful MEV. Because express-lane transactions cannot access the mempool, sandwich attacks and front-running are impossible. Users can either participate in the auction or accept the slight delay of regular sequencing.
+## 6. OP Stack Sequencer Revenue
 
-**Revenue Sustainability**: The DAO-captured MEV provides sustainable funding for sequencer operations and ecosystem development, reducing reliance on conventional gas fees.
+The OP Stack shows a different path: standardize rollup infrastructure and route part of chain economics back to the Optimism Collective. OP Stack transaction fees include L2 execution fees and L1 data fees. Optimism's fee documentation explains that users pay for execution on the L2 and for the cost of publishing transaction data to Ethereum, with post-Ecotone fee logic also accounting for blob-related costs.
 
-### 3.3 Decentralization Compatibility
+Revenue attribution is therefore more nuanced than "the sequencer gets all fees." A chain operator may collect L2 base and priority fees through fee vaults, pay L1 data costs, and then share revenue under Superchain agreements. Optimism documentation states that Superchain member chains contribute the greater of 2.5% of gross transaction fees or 15% of net transaction-fee profit to the Optimism Collective, while OP Mainnet contributes 100% of its net transaction-fee profit.
 
-A key design principle of Timeboost is compatibility with future decentralized sequencers. The auction mechanism is protocol-level, meaning any sequencer—centralized or decentralized—can implement it. This allows Arbitrum to capture MEV value today while maintaining a clear path to sequencer decentralization.[^5]
+This model turns sequencer economics into an ecosystem funding mechanism. Instead of only charging a franchise fee or relying on token issuance, the Superchain can connect usage on member chains to public goods funding and governance. That may become increasingly important if many OP Stack chains share upgrades, security assumptions, developer tooling, and interoperability standards.
 
----
+The MEV question remains only partly answered. Fee sharing is transparent when it concerns fee vaults and reported revenue, but it does not automatically prove that harmful ordering MEV is absent or rebated. Researchers should distinguish OP Stack fee revenue from MEV extraction. The former can be tracked from docs, vault addresses, and public reporting. The latter requires transaction-level strategy analysis, comparable prices across venues, and evidence that ordering affected execution.
 
-## 4. Case Study: Optimism OP Stack Sequencer Revenue
+## 7. Comparative View
 
-Optimism's approach to sequencer revenue differs from Arbitrum in its focus on the Superchain model: a network of OP Stack-compatible L2s that share infrastructure and governance while maintaining separate execution layers.
+| Model | Main benefit | Main risk | Best current use case |
+| --- | --- | --- | --- |
+| Centralized sequencer | Lowest operational complexity and fast soft confirmations | Opaque value extraction and censorship risk | Early or high-throughput rollups optimizing UX |
+| Protocol priority auction, such as Timeboost | Public price for latency advantage and DAO revenue | Sophisticated actors may dominate auctions | Mature rollups that want to monetize priority without full sequencing decentralization |
+| OP Stack revenue sharing | Turns chain usage into ecosystem funding | Fee revenue transparency does not equal MEV transparency | Multi-chain ecosystems with shared governance and standards |
+| Shared sequencer | More neutral ordering and cross-rollup coordination | Bootstrapping, latency, and incentive complexity | Rollups seeking decentralization or interoperability as a differentiator |
+| SUAVE-like auction layer | Cross-domain execution and user preference markets | Integration, privacy, and maturity risk | High-value order flow, intents, and multi-chain execution |
 
-### 4.1 Fee Structure
+## 8. Data Sources and Caveats
 
-OP Stack chains collect transaction fees in three components:[^6]
+Reliable L2 MEV research should combine at least four source types.
 
-1. **Priority Fees** (EIP-1559): Paid to the Sequencer Fee Vault; variable based on network demand
-2. **Base Fees**: Accumulated in the Base Fee Vault; follows EIP-1559 mechanics
-3. **L1 Data Fees**: Charged to cover L1 batch submission costs; includes blob-base-fee adjustments post-Ecotone upgrade
+First, protocol documentation defines the mechanism. Arbitrum governance posts and research explain Timeboost's priority auction; Optimism docs explain OP Stack fees and revenue sharing; Flashbots writing explains SUAVE's goals and architecture; Espresso and Astria docs explain shared sequencing assumptions.
 
-The L1 Data Fee is particularly significant on OP Stack chains. It represents the cost to users for providing data availability to L1, calculated as:
+Second, on-chain accounting shows fee flows. For OP Stack chains, fee vaults, L1 data costs, and chain-operator reporting are stronger evidence than social posts. For Arbitrum Timeboost, auction payment addresses and DAO reporting are stronger than annualized screenshots.
 
-```
-L1 Data Fee = (gas cost in wei) × (l1 basefee or blobfee) × (scalar factor)
-```
+Third, market analytics estimate extractable value. Dune dashboards, Blockworks Research, L2BEAT, EigenPhi, and protocol-specific dashboards can help quantify revenue and concentration, but methods vary. Any daily or monthly MEV number should include a method note.
 
-This fee directly reflects Ethereum's L1 security properties, creating economic alignment between the L2 and L1.
+Fourth, transaction-level studies identify user harm. Sandwiching, latency arbitrage, and liquidations require strategy classification, not just fee accounting. This is where academic work and reproducible open-source analysis are most valuable.
 
-### 4.2 Revenue Distribution: The Superchain Model
+The largest caveat is that "sequencer revenue" and "MEV" are not synonyms. Sequencer revenue can be legitimate fees net of L1 costs. MEV is value from ordering, inclusion, exclusion, or information advantage. A rollup can have high sequencer revenue with little harmful MEV, or low visible revenue with significant private extraction.
 
-Unlike Arbitrum, where MEV is primarily captured by a single sequencer, the OP Stack implements a revenue-sharing model across the Superchain:[^7]
+## Conclusion
 
-- **OP Mainnet**: All sequencer revenue flows to the Optimism Collective, funding governance and ecosystem development
-- **Other OP Chains** (e.g., Base): Contribute a percentage of sequencer revenue to the Optimism Collective:
-  - Greater of 2.5% of total sequencer revenue (L2 base fees + priority fees), OR
-  - 15% of net on-chain profit (total revenue minus L1 gas costs)
+MEV on L2 rollups is a design choice hidden inside sequencing architecture. Centralized sequencers are fast and practical, but they concentrate the ordering position. Shared sequencers and SUAVE-like systems broaden competition, but they add coordination and integration costs. Arbitrum Timeboost and OP Stack revenue sharing show that production rollups are already experimenting with explicit ways to monetize or redirect sequencing value.
 
-As of Q4 2024, the Optimism Collective had accumulated over 15,673 ETH (~$40+ million) from Superchain sequencer revenue, demonstrating the scale of MEV on L2s.
-
-### 4.3 Strategic OP Token Alignment
-
-In January 2026, Optimism governance proposed linking sequencer revenue directly to OP token demand through a buyback mechanism. The proposal allocates 50% of monthly sequencer fees toward OP token market purchases, with acquired tokens held in treasury or subject to future burn/redistribution votes. This approach explicitly ties L2 MEV capture to L1 token value, creating a virtuous cycle: higher L2 activity → more MEV → more OP buybacks → stronger token economics.
-
----
-
-## 5. Flashbots SUAVE: A Decentralized Alternative
-
-While Arbitrum and Optimism focus on optimizing centralized and DAO-governed sequencer models, Flashbots SUAVE (Single Unified Auction for Value Expression) proposes a radical decentralization of the entire MEV market infrastructure.
-
-### 5.1 SUAVE Architecture
-
-SUAVE is not a rollup but rather a specialized sequencing layer that any blockchain—including L1, L2s, and sidechains—can plug into for decentralized transaction ordering and MEV management.[^8]
-
-**Core Components**:
-
-1. **Universal Preference Environment**: A specialized blockchain that aggregates "preferences"—user-signed messages expressing transaction intent—from all participating chains. Unlike traditional mempools, the preference environment enables rich expression: simple transfers, complex multi-chain swaps, and conditional execution.
-
-2. **Optimal Execution Market**: A competitive network of "executors" who bid to fulfill user preferences. Executors can access encrypted preferences and compete to provide the best execution, capturing any MEV their execution creates but obligated to return a portion to users.
-
-3. **Decentralized Block Building**: A permissionless network of block builders that construct blocks for all participating domains using encrypted preference data. This prevents information asymmetries and front-running.
-
-### 5.2 MEV Redistribution Mechanisms
-
-SUAVE's innovation lies in its redistribution philosophy:
-
-- **User Privacy**: Transaction content is encrypted until ordering is finalized, preventing MEV extraction by sequencers or builders
-- **Executor Competition**: Multiple executors bid to fulfill each user preference, competing execution quality forces them to return MEV to users
-- **Decentralized Block Building**: Instead of a monolithic builder controlling all MEV, SUAVE enables collaborative block building where multiple parties contribute, reducing concentration risk
-
-The goal is not to eliminate MEV (impossible at the protocol level) but to redistribute it fairly: users who generate MEV benefit from it, rather than sequencers or builders capturing it unilaterally.
-
-### 5.3 Roadmap and Deployment
-
-Flashbots has outlined a three-phase rollout:[^9]
-
-1. **SUAVE Centauri** (Early 2025): Privacy-aware orderflow auction with centralized trust assumption; devnet available for testing
-2. **SUAVE Andromeda** (Mid 2025): Mainnet launch; SGX-based encryption replaces centralized trust; open orderflow for builders
-3. **SUAVE Helios** (2025+): Decentralized block-building network; multi-domain MEV support; onboarding of second domain
-
-A key aspect of SUAVE's design is gradual decentralization: Flashbots will run centralized infrastructure initially for bootstrapping but intends to transition to full decentralization, positioning itself as a neutral marketplace designer rather than a profit-extracting participant.
-
----
-
-## 6. Comparative Analysis
-
-### 6.1 Centralization vs. Decentralization Tradeoff
-
-| Aspect | Arbitrum Timeboost | OP Stack | SUAVE |
-|--------|-------------------|----------|-------|
-| **Sequencer Model** | Centralized + Auction | Centralized + DAO Revenue Share | Decentralized Network |
-| **MEV Capture** | Arbitrum DAO | Optimism Collective | Users (via executor competition) |
-| **User Protection** | Yes (no reordering) | Partial (fee transparency) | Yes (encrypted preferences) |
-| **Scalability** | High (single sequencer) | High (single sequencer) | TBD (network overhead) |
-| **Decentralization Path** | Compatible | Roadmap TBD | Native |
-
-### 6.2 Revenue and Economic Sustainability
-
-All three models generate revenue but allocate it differently:
-
-- **Timeboost**: Auction revenue → Arbitrum DAO, sustainable funding for infrastructure
-- **OP Stack**: Fee revenue → Optimism Collective, with strategic OP buybacks to align incentives
-- **SUAVE**: Executor fees → users (directly) and builders (as competition outcome), sustainable via neutral marketplace design
-
-The ideal model depends on a rollup's governance philosophy: centralized MEV capture with DAO governance (Arbitrum/Optimism) vs. user-aligned MEV redistribution (SUAVE).
-
-### 6.3 Cross-Domain MEV
-
-An emerging concern is **cross-domain MEV**—opportunities that span multiple chains. SUAVE is explicitly designed to handle this through its unified preference environment and decentralized block-building network. Arbitrum and OP Stack, being single-chain sequencers, cannot easily coordinate cross-domain MEV, creating a potential advantage for SUAVE-integrated L2s.[^10]
-
----
-
-## 7. Emerging Challenges and Future Directions
-
-### 7.1 Shared Sequencers and Interoperability
-
-Beyond SUAVE, other shared sequencer projects are gaining traction:
-
-- **Metis**: Pioneered decentralized PoS sequencers on L2, with validators earning proportional MEV
-- **Based Rollups**: A new paradigm where Ethereum L1 proposers sequence rollup transactions, inheriting L1's decentralization but increasing MEV competition
-- **Encryption-as-a-Service**: Shutter Network and others use Distributed Key Generation to encrypt transactions until ordering is finalized, preventing MEV pre-confirmation
-
-Each approach makes different tradeoffs between decentralization, user protection, and operational complexity.
-
-### 7.2 Regulatory and Fairness Considerations
-
-As MEV mechanisms mature, regulators may scrutinize whether auction-based sequencing constitutes fair access to blockspace. The SEC and other bodies have shown interest in transaction ordering and front-running prevention, particularly as L2s handle more financial activity.
-
-Timeboost and SUAVE both provide clear answers to fairness objections: they restrict sequencer/builder reordering power and ensure all users have equal access to priority sequencing (via auction). This may make auction-based models more defensible than purely centralized sequencing.
-
-### 7.3 Incentive Alignment in Multi-Chain Futures
-
-As L2 ecosystems expand and users transact across multiple chains, sequencer incentive alignment becomes critical. A sequencer that can extract MEV across domains has a strong economic advantage, which may drive consolidation or the adoption of unified sequencing layers like SUAVE.
-
-Conversely, rollups that fail to monetize MEV efficiently may struggle to fund sequencer operations and security, creating a competitive disadvantage.
-
----
-
-## 8. Data Sources and Methodological Notes
-
-This brief synthesizes research from:
-
-1. **Protocol Documentation**:
-   - Arbitrum official Timeboost documentation[^11]
-   - Optimism OP Stack specifications and revenue model papers[^12]
-   - Flashbots SUAVE whitepaper and research publications[^13]
-
-2. **On-Chain Data**:
-   - Arbitrum Timeboost revenue tracking (Dune Analytics[^14])
-   - Optimism Superchain fee distribution (Blockworks, Gate.io)[^15]
-
-3. **Academic and Research Sources**:
-   - "Rolling in the Shadows: MEV in Rollups" (Weintraub et al.)
-   - Flashbots transparency reports and MEV research collective[^16]
-   - Ethereum Research Forum discussions on decentralized sequencing and shared sequencers[^17]
-
-4. **Industry Publications**:
-   - The Block, Bankless, and Paradigm research on L2 economics
-   - Medium articles from ecosystem researchers (Vitalik.ca, Polynya, others)
-
----
-
-## 9. Conclusion
-
-MEV on L2 rollups is neither a problem to be eliminated nor an externality to be ignored—it is a structural feature of blockchains that must be actively managed through mechanisms and incentives.
-
-Current L2 leaders—Arbitrum and Optimism—have chosen a pragmatic path: centralized sequencers with transparent, protocol-level auction mechanisms (Timeboost) or DAO-governed revenue sharing (Superchain). These approaches capture MEV value for the protocol and community while maintaining user protection and network efficiency.
-
-Flashbots SUAVE represents an alternative vision: fully decentralized MEV redistribution through competitive executors and encrypted preferences. SUAVE's roadmap toward mainstream adoption suggests the L2 ecosystem is experimenting with multiple MEV architectures, each with distinct security and fairness properties.
-
-The future of MEV on L2s will likely involve:
-
-1. **Continued experimentation**: Multiple models (auction-based, decentralized, shared sequencer) will coexist, each optimized for different use cases
-2. **Cross-domain integration**: As users transact across multiple L2s and domains, unified MEV handling (via SUAVE or similar) becomes economically compelling
-3. **Regulatory clarity**: Fairness in sequencing and transaction ordering will likely attract regulatory scrutiny, making transparent mechanisms like Timeboost more defensible
-4. **Value alignment**: Successful L2s will explicitly tie MEV capture to token value and ecosystem growth, as Optimism's buyback model demonstrates
-
-Ultimately, the MEV mechanisms chosen by L2s will determine their long-term sustainability, user adoption, and competitive position in the multi-chain future.
-
----
+The strongest near-term standard is not "no MEV." It is transparent mechanism design: public ordering rules, accountable revenue destinations, clear user protections, and reproducible data. As L2 activity keeps moving away from Ethereum L1 execution, the credibility of rollups will depend on whether they can make sequencing power legible and contestable.
 
 ## References
 
-[^1]: Scalingx, "Dealing with MEV in Rollups," Medium (2024). https://medium.com/@scalingx/dealing-with-mev-in-rollups-3ffa2072f154
-
-[^2]: Weintraub, Ben, "Rolling in the Shadows: Side Channels on the Critical Path," academic paper (2024). https://ben-weintraub.com/files/rolling-in-the-shadows.pdf
-
-[^3]: Gate.io, "The Allure of MEV: Why Decentralizing Sequencers is Hard," Learning Center (2024). https://www.gate.com/learn/articles/the-allure-of-mev-why-decentralizing-sequencers-is-hard/1925
-
-[^4]: Arbitrum Foundation, "Timeboost: A Gentle Introduction," Official Documentation (2025). https://docs.arbitrum.io/how-arbitrum-works/timeboost/gentle-introduction
-
-[^5]: Arbitrum Foundation, "Timeboost FAQ," Official Documentation (2025). https://docs.arbitrum.io/how-arbitrum-works/timeboost/timeboost-faq
-
-[^6]: Optimism Foundation, "Transaction Fees on OP Stack," OP Stack Documentation (2024). https://docs.optimism.io/op-stack/transactions/fees
-
-[^7]: Optimism Foundation, "How (and Why) the Superchain Drives Fees to the Optimism Collective," Official Blog (2024). https://www.optimism.io/blog/how-(and-why)-the-superchain-drives-fees-to-the-optimism-collective
-
-[^8]: Flashbots Collective, "The Future of MEV is SUAVE," Writings (2024). https://writings.flashbots.net/the-future-of-mev-is-suave
-
-[^9]: Ibid.
-
-[^10]: Paradigm Research, "Order Flow Auctions and Centralization," Medium (2023). https://writings.flashbots.net/order-flow-auctions-and-centralisation
-
-[^11]: Arbitrum Foundation, Timeboost Official Documentation (2025). https://docs.arbitrum.io/how-arbitrum-works/timeboost/
-
-[^12]: Optimism Foundation, OP Stack Specifications and Protocol Documentation (2024). https://specs.optimism.io/
-
-[^13]: Flashbots Collective, "SUAVE: A Research Collective" (2024). https://github.com/0xapriori/Suave-research
-
-[^14]: Entropy Advisors, "Arbitrum Timeboost Dashboard," Dune Analytics (2025). https://dune.com/entropy_advisors/arbitrum-timeboost
-
-[^15]: Blockworks Research, "Base and Optimism Collective Fee Split," Analytics (2024). https://blockworks.com/analytics/base/base-optimism-collective-fee-split
-
-[^16]: Flashbots Collective, Transparency Reports and MEV Research. https://collective.flashbots.net/
-
-[^17]: Ethereum Research, "Shared Sequencers and Decentralized Sequencing," Forum Discussions (2024). https://ethresear.ch/
-
----
-
-**Word Count**: 2,847 words  
-**Date**: April 2026  
-**Submission**: For kcolbchain/research repository
-
+1. L2BEAT, "Scaling risk analysis." https://l2beat.com/scaling/risk
+2. Ben Weintraub et al., "Rolling in the Shadows: Analyzing the Extraction of MEV Across Layer-2 Rollups." https://arxiv.org/abs/2405.00138
+3. Arbitrum DAO Forum, "Constitutional AIP: Proposal to adopt Timeboost, a new transaction ordering policy." https://forum.arbitrum.foundation/t/constitutional-aip-proposal-to-adopt-timeboost-a-new-transaction-ordering-policy/25167
+4. Arbitrum Research, "Decentralized Timeboost Specification." https://research.arbitrum.io/t/decentralized-timeboost-specification/9676
+5. Arbitrum, "Gattaca Titan: Timeboost Live on Arbitrum." https://blog.arbitrum.io/gattaca-titan-timeboost-live-on-arbitrum/
+6. Optimism Docs, "Transaction fees on OP Stack." https://docs.optimism.io/op-stack/transactions/fees
+7. Optimism Docs, "Capital allocation." https://docs.optimism.io/governance/capital-allocation
+8. Optimism Docs, "The OP Stack." https://docs.optimism.io/op-stack/introduction/op-stack
+9. Flashbots, "The Future of MEV is SUAVE." https://writings.flashbots.net/the-future-of-mev-is-suave
+10. Flashbots, "SUAVE specs." https://github.com/flashbots/suave-specs
+11. Espresso Systems, "FAQ." https://www.espressosys.com/faq
+12. Espresso Systems Docs, "Rollup architecture." https://docs.espressosys.com/network/concepts/rollup-architecture
+13. Astria Docs, "The Astria Sequencing Layer." https://docs.astria.org/overview/components/the-astria-sequencing-layer
