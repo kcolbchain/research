@@ -10,6 +10,31 @@ Thanks for your interest in contributing! kcolbchain is an open blockchain resea
 4. Submit a PR referencing the issue number
 5. Get reviewed within 48 hours
 
+## Research Brief Format
+
+Use `briefs/_TEMPLATE.md` for new briefs. Keep the structure stable so briefs are easy to review, cite, and compare over time.
+
+Required sections:
+
+- Title: concise and specific enough to cite on its own.
+- Abstract: 100-150 words summarizing the question, method, and conclusion.
+- Body: organized with second-level headings, short paragraphs, and evidence-backed claims.
+- References: every factual claim that depends on external data, law, protocol documentation, or a third-party interpretation must be cited.
+
+## Citation Standards
+
+- Prefer primary sources: protocol documentation, governance forums, whitepapers, audits, legal/regulatory publications, public datasets, or official incident reports.
+- Use Markdown links inline for web sources and include enough surrounding context to identify the source without opening it.
+- Include an access date for volatile sources such as dashboards, market data, governance posts, or issue threads.
+- For papers, include author or organization, title, year, and a DOI/arXiv/SSRN/canonical URL when available.
+- Do not cite screenshots, social posts, or secondary summaries when a durable primary source is available.
+
+Suggested inline style:
+
+```text
+Optimism documents Timeboost as an optional sequencing mechanism for OP Stack chains ([Optimism Docs, accessed 2026-05-20](https://docs.optimism.io/)).
+```
+
 ## Contributor Tiers
 
 | PRs Merged | Tier | Access |
