@@ -20,6 +20,7 @@ Published research notes, analysis, and briefs from the kcolbchain research coll
 | [Stablecoin Depeg Events](depeg_analysis.md) | May 2026 | UST, USDC, BUSD, TUSD, USDe, and BIS/NBER run-risk framing |
 | [MEV on L2 Rollups](briefs/mev-l2-rollups.md) | May 2026 | Sequencer extraction, shared sequencers, SUAVE, Timeboost, OP Stack revenue |
 | [Q2 2026 Research Brief](briefs/2026-Q2-research-brief.md) | Apr 2026 | L2 scaling, payments, stablecoins, DeFi, MEV, RWAs |
+| [LABELTON: A rights primitive for music on-chain](briefs/labelton-music-rights-primitive.md) | May 2026 | Music rights on-chain, ISRC/UPC/ISWC anchoring, wallet-sovereign mint at master generation, Muzix DAO / CR8 chain stratification |
 
 ## How to Use
 
