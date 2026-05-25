@@ -49,6 +49,19 @@ Ship quality PRs and unlock paid opportunities at funded blockchain companies.
 
 Issues tagged `bounty` have paid rewards. Claim by commenting, deliver within timeline, get paid on merge.
 
+Detailed citation standards are maintained in [`docs/citation-standards.md`](docs/citation-standards.md).
+
+## Code of Conduct
+
+All contributors must:
+
+- **Be respectful**: disagreement is fine; personal attacks are not
+- **Cite accurately**: do not misrepresent sources
+- **Acknowledge competing views**: present opposing evidence fairly
+- **Disclose conflicts**: if you have a financial interest in a protocol you're writing about, say so
+
+Violations may result in removal of contributions and contributor privileges.
+
 ## Links
 
 - Docs: https://docs.kcolbchain.com/research/
